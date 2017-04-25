@@ -11,18 +11,18 @@ from logging import getLogger
 from multiprocessing import Pool
 logger = getLogger(__name__)
 
-from load_data import SealionData, DATA_DIR, TRAIN_DATA_DIR
-MAX_AVG_DIFF = 50
+DATA_DIR = "../../data/data/"
+TRAIN_DATA_DIR = DATA_DIR + "Train/"
 
-SET_MISMATCH_IDS = set(pandas.read_csv(DATA_DIR + 'MismatchedTrainImages.txt')['train_id'].values.tolist())
+
+class SealionData:
+    def __init__(self, idx, coord, s_type):
+        self.idx = idx
+        self.coord = coord
+        self.s_type = s_type
 
 
 def find_data(idx):
-
-    if idx in SET_MISMATCH_IDS:
-        logger.info('Mismatched %s' % idx)
-        return None
-
     logger.info("{}".format(idx))
     map_count = {'adult_males': [],
                  'subadult_males': [],
@@ -37,9 +37,8 @@ def find_data(idx):
     # absolute difference between Train and Train Dotted
     image_3 = cv2.absdiff(image_1, image_2)
 
-    if idx in SET_MISMATCH_IDS:
-        logger.info('Mismatched')
-        return None
+    import pdb
+    pdb.set_trace()
 
     # mask out blackened regions from Train Dotted
     mask_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
@@ -57,7 +56,7 @@ def find_data(idx):
     image_3 = cv2.cvtColor(image_3, cv2.COLOR_BGR2GRAY)
 
     # detect blobs
-    blobs = skimage.feature.blob_log(image_3, min_sigma=3, max_sigma=4, num_sigma=1, threshold=0.02)
+    blobs = skimage.feature.blob_dog(image_3, max_sigma=4, threshold=0.02)
     for blob in blobs:
         # get the coordinates for each blob
         y, x, s = blob
@@ -100,9 +99,7 @@ if __name__ == '__main__':
     logger.addHandler(handler)
 
     df = pandas.read_csv(TRAIN_DATA_DIR + 'train.csv')
-    p = Pool()
-    list_result = list(p.map(find_data, df['train_id'].values))
-    p.close()
-    p.join()
-    with open('sealion_loc.pkl', 'wb') as f:
-        pickle.dump(list_result, f, -1)
+    #p = Pool()
+    list_result = list(map(find_data, [0]))
+    # p.close()
+    # p.join()
